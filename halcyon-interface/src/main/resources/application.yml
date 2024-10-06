@@ -1,0 +1,8 @@
+server:
+  port: 8123
+  servlet:
+    context-path: /api
+halcyon-api:
+  client:
+    access-key: guyue
+    secret-key: 123456
