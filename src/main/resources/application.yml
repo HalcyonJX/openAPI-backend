@@ -43,6 +43,11 @@ spring:
     multipart:
       # 大小限制
       max-file-size: 10MB
+# 引入自己写的SDK
+halcyon-api:
+  client:
+    access-key: guyue
+    secret-key: 123456
 server:
   address: 0.0.0.0
   port: 8101

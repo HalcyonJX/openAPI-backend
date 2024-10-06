@@ -2,6 +2,7 @@ package com.yupi.springbootinit.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.halcyon.halcyonclientsdk.client.OpenApiClient;
 import com.yupi.springbootinit.annotation.AuthCheck;
 import com.yupi.springbootinit.common.BaseResponse;
 import com.yupi.springbootinit.common.DeleteRequest;
@@ -16,6 +17,7 @@ import com.yupi.springbootinit.model.dto.interfacesInfo.InterfacesInfoQueryReque
 import com.yupi.springbootinit.model.dto.interfacesInfo.InterfacesInfoUpdateRequest;
 import com.yupi.springbootinit.model.entity.InterfacesInfo;
 import com.yupi.springbootinit.model.entity.User;
+import com.yupi.springbootinit.model.enums.InterfaceInfoStatusEnum;
 import com.yupi.springbootinit.model.vo.InterfacesInfoVO;
 import com.yupi.springbootinit.service.InterfacesInfoService;
 import com.yupi.springbootinit.service.UserService;
@@ -28,7 +30,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
 /**
- * 帖子接口
+ * 接口管理
  *
  * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
  * @from <a href="https://yupi.icu">编程导航知识星球</a>
@@ -43,6 +45,9 @@ public class InterfacesInfoController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private OpenApiClient openApiClient;
 
     // region 增删改查
 
@@ -94,7 +99,6 @@ public class InterfacesInfoController {
         boolean b = interfacesInfoService.removeById(id);
         return ResultUtils.success(b);
     }
-
     /**
      * 更新（仅管理员）
      *
@@ -109,13 +113,73 @@ public class InterfacesInfoController {
         }
         InterfacesInfo interfacesInfo = new InterfacesInfo();
         BeanUtils.copyProperties(interfacesInfoUpdateRequest, interfacesInfo);
-
         // 参数校验
         interfacesInfoService.validInterfacesInfo(interfacesInfo, false);
         long id = interfacesInfoUpdateRequest.getId();
         // 判断是否存在
         InterfacesInfo oldInterfacesInfo = interfacesInfoService.getById(id);
         ThrowUtils.throwIf(oldInterfacesInfo == null, ErrorCode.NOT_FOUND_ERROR);
+        boolean result = interfacesInfoService.updateById(interfacesInfo);
+        return ResultUtils.success(result);
+    }
+
+    /**
+     * 发布接口（仅管理员）
+     *
+     * @param interfacesInfoUpdateRequest
+     * @return
+     */
+    @PostMapping("/online")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE) // 基于AOP机制校验用户身份
+    public BaseResponse<Boolean> onlineInterfaceInfo(@RequestBody InterfacesInfoUpdateRequest interfacesInfoUpdateRequest) {
+        if (interfacesInfoUpdateRequest == null || interfacesInfoUpdateRequest.getId() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        //1.校验接口是否存在
+        Long interfaceId = interfacesInfoUpdateRequest.getId();
+        InterfacesInfo interfacesInfo = interfacesInfoService.getById(interfaceId);
+        if(interfacesInfo == null){
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+
+        //2.判断该接口是否可以调用
+        try {
+            openApiClient.getNameByPost("HalcyonJX");
+        }catch (Exception e){
+            throw new BusinessException(ErrorCode.OPERATION_ERROR);
+        }
+
+        //3.更新接口状态，配置枚举类
+        interfacesInfo.setId(interfaceId);
+        //修改接口数据库中的状态字段为1
+        interfacesInfo.setStatus(InterfaceInfoStatusEnum.ONLINE.getValue());
+
+        boolean result = interfacesInfoService.updateById(interfacesInfo);
+        return ResultUtils.success(result);
+    }
+    /**
+     * 下线接口（仅管理员）
+     *
+     * @param interfacesInfoUpdateRequest
+     * @return
+     */
+    @PostMapping("/offline")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> offlineInterfaceInfo(@RequestBody InterfacesInfoUpdateRequest interfacesInfoUpdateRequest,HttpServletRequest request) {
+        if (interfacesInfoUpdateRequest == null || interfacesInfoUpdateRequest.getId() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        //1.校验接口是否存在
+        Long interfaceId = interfacesInfoUpdateRequest.getId();
+        InterfacesInfo interfacesInfo = interfacesInfoService.getById(interfaceId);
+        if(null == interfacesInfo){
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+
+        //2.更新接口状态，修改为下线
+        interfacesInfo.setId(interfaceId);
+        interfacesInfo.setStatus(InterfaceInfoStatusEnum.OFFLINE.getValue());
+
         boolean result = interfacesInfoService.updateById(interfacesInfo);
         return ResultUtils.success(result);
     }
