@@ -2,6 +2,8 @@ package com.yupi.springbootinit.service;
 
 import com.yupi.springbootinit.model.entity.InterfacesInfo;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.yupi.springbootinit.model.vo.InterfacesInfoVO;
+import org.springframework.beans.BeanUtils;
 
 /**
 * @author 张嘉鑫
@@ -15,4 +17,15 @@ public interface InterfacesInfoService extends IService<InterfacesInfo> {
      * @param add
      */
     void validInterfacesInfo(InterfacesInfo interfacesInfo, boolean add);
+    /*
+    出于可维护性和可读性，后期可以考虑
+    1. 使用构造函数或者静态工厂方法，将该转换逻辑移动到 InterfacesInfoVO 中; 使用构造函数的静态方法
+    2. 使用 BeanUtils 进行拷贝
+    3. 使用 Lombok 的 @Builder 注解
+     */
+    default InterfacesInfoVO convert2Vo(InterfacesInfo interfacesInfo) {
+        InterfacesInfoVO vo = new InterfacesInfoVO();
+        BeanUtils.copyProperties(interfacesInfo, vo);
+        return vo;
+    }
 }

@@ -2,6 +2,7 @@ package com.yupi.springbootinit.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.google.gson.Gson;
 import com.halcyon.halcyonclientsdk.client.OpenApiClient;
 import com.yupi.springbootinit.annotation.AuthCheck;
 import com.yupi.springbootinit.common.BaseResponse;
@@ -12,6 +13,7 @@ import com.yupi.springbootinit.constant.CommonConstant;
 import com.yupi.springbootinit.constant.UserConstant;
 import com.yupi.springbootinit.exception.BusinessException;
 import com.yupi.springbootinit.exception.ThrowUtils;
+import com.yupi.springbootinit.model.dto.interfacesInfo.InterfaceInfoInvokeRequest;
 import com.yupi.springbootinit.model.dto.interfacesInfo.InterfacesInfoAddRequest;
 import com.yupi.springbootinit.model.dto.interfacesInfo.InterfacesInfoQueryRequest;
 import com.yupi.springbootinit.model.dto.interfacesInfo.InterfacesInfoUpdateRequest;
@@ -183,6 +185,46 @@ public class InterfacesInfoController {
         boolean result = interfacesInfoService.updateById(interfacesInfo);
         return ResultUtils.success(result);
     }
+    /**
+     * 测试调用
+     *
+     * @param interfaceInfoInvokeRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/invoke")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Object> invokeInterfaceInfo(@RequestBody InterfaceInfoInvokeRequest interfaceInfoInvokeRequest, HttpServletRequest request) {
+        //检查请求对象是否为空或者接口id是否小于等于0
+        if (interfaceInfoInvokeRequest == null || interfaceInfoInvokeRequest.getId() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        //1.校验接口是否存在
+        Long id = interfaceInfoInvokeRequest.getId();
+        // 获取用户请求参数
+        String userRequestParams = interfaceInfoInvokeRequest.getUserRequestParams();
+        //判断是否存在
+        InterfacesInfo interfacesInfo = interfacesInfoService.getById(id);
+        if(null == interfacesInfo){
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        // 检查接口是否为下线状态
+        if(interfacesInfo.getStatus() == InterfaceInfoStatusEnum.OFFLINE.getValue()){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"接口已关闭");
+        }
+        //获取当前登录用户的ak和sk，这样相当于用户自己的这个身份去调用
+        // 也不会但内心它刷接口，因为知道是谁刷了这个接口，会比较安全
+        User loginUser = userService.getLoginUser(request);
+        String accessKey = loginUser.getAccessKey();
+        String secretKey = loginUser.getSecretKey();
+        //创建一个临时的ApiClient对象，并传入ak和sk
+        OpenApiClient tempApiClient = new OpenApiClient(accessKey, secretKey);
+        Gson gson = new Gson();
+        com.halcyon.halcyonclientsdk.model.User user = gson.fromJson(userRequestParams, com.halcyon.halcyonclientsdk.model.User.class);
+        String userNameByPost = tempApiClient.getUserNameByPost(user);
+        //返回成功响应，并包含调用结果
+        return ResultUtils.success(userNameByPost);
+    }
 
     /**
      * 根据 id 获取
@@ -199,8 +241,8 @@ public class InterfacesInfoController {
         if (interfacesInfo == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
         }
-//        return ResultUtils.success(interfacesInfoService.getInterfacesInfoVO(interfacesInfo, request));
-        return null;
+        InterfacesInfoVO vo = interfacesInfoService.convert2Vo(interfacesInfo);
+        return ResultUtils.success(vo);
     }
 
     /**

@@ -74,6 +74,15 @@ public class User implements Serializable {
      * 更新时间
      */
     private Date updateTime;
+    /**
+     * SDK Access Key
+     */
+    private String accessKey;
+
+    /**
+     * SDK Secret Key
+     */
+    private String secretKey;
 
     /**
      * 是否删除
