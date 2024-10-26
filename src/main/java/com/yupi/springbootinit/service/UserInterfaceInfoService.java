@@ -13,4 +13,12 @@ public interface UserInterfaceInfoService extends IService<UserInterfaceInfo> {
     void validUserInterfaceInfo(UserInterfaceInfo userInterfaceInfo, Boolean flag);
 
     UserInterfaceInfoVO convert2VO(UserInterfaceInfo userInterfaceInfo);
+
+    /**
+     * 调用接口次数统计
+     * @param interfaceInfoId
+     * @param userId
+     * @return
+     */
+    boolean invokeCount(long interfaceInfoId, long userId);
 }

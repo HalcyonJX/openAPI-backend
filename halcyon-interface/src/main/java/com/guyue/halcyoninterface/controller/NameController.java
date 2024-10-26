@@ -13,7 +13,9 @@ import java.time.Instant;
 @RequestMapping("name")
 public class NameController {
     @GetMapping("/getName")
-    public String getNameByGet(String name){
+    public String getNameByGet(String name,HttpServletRequest request){
+        //获取请求头中名为“fangyuan”的值
+        System.out.println(request.getHeader("fangyuan"));
         return "GET 你的名字是"+name;
     }
     @PostMapping("/postName")
