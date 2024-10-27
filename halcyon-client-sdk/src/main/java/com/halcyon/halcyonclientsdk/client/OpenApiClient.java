@@ -16,6 +16,8 @@ import java.util.Map;
  */
 public class OpenApiClient {
 
+    private static final String GATEWAY_HOST = "http://localhost:8091";
+
     private String accessKey;
     private String secretKey;
 
@@ -30,7 +32,7 @@ public class OpenApiClient {
         // 将"name"参数添加到映射中
         paramMap.put("name", name);
         // 使用HttpUtil工具发起GET请求，并获取服务器返回的结果
-        String result= HttpUtil.get("http://localhost:8123/api/name/getName", paramMap);
+        String result= HttpUtil.get(GATEWAY_HOST+"/api/name/getName", paramMap);
         // 打印服务器返回的结果
         System.out.println(result);
         // 返回服务器返回的结果
@@ -43,7 +45,7 @@ public class OpenApiClient {
         HashMap<String, Object> paramMap = new HashMap<>();
         paramMap.put("name", name);
         // 使用HttpUtil工具发起POST请求，并获取服务器返回的结果
-        String result= HttpUtil.post("http://localhost:8123/api/name/postName", paramMap);
+        String result= HttpUtil.post(GATEWAY_HOST+"/api/name/postName", paramMap);
         System.out.println(result);
         return result;
     }
@@ -68,7 +70,7 @@ public class OpenApiClient {
         // 将User对象转换为JSON字符串
         String json = JSONUtil.toJsonStr(user);
         // 使用HttpRequest工具发起POST请求，并获取服务器的响应
-        HttpResponse httpResponse = HttpRequest.post("http://localhost:8123/api/name/postUser")
+        HttpResponse httpResponse = HttpRequest.post(GATEWAY_HOST+"/api/name/postUser")
                 //添加前面构造的请求头
                 .addHeaders(getHeaderMap(json))
                 .body(json) // 将JSON字符串设置为请求体
